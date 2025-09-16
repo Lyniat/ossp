@@ -5,5 +5,5 @@
 - compatible with DragonRuby and standalone mRuby
 - easy to implement more protocols like (mRuby hashes <-> JSON)
 
-## OSSP Protocol
-[OService documentation](https://oservice.lyniat.games)
+## OSSP Example Data
+[OService documentation](https://oservice.lyniat.games/#/ossp)
