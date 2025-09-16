@@ -7,35 +7,13 @@ project(${THIS_PROJECT_NAME} LANGUAGES C CXX)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS src/*.cpp)
 
-include_directories(
-        include
-)
+include_directories(include)
 
 add_library(${THIS_PROJECT_NAME} STATIC ${SRC})
 
 set_property(TARGET ${THIS_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
 set_target_properties(${THIS_PROJECT_NAME} PROPERTIES OUTPUT_NAME "ossp")
-
-include(FetchContent)
-
-FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt
-        GIT_TAG        e69e5f977d458f2650bb346dadf2ad30c5320281) # 10.2.1
-
-FetchContent_MakeAvailable(fmt)
-
-target_compile_options(fmt PUBLIC -fPIC -fno-rtti)
-
-target_link_libraries(${THIS_PROJECT_NAME}
-        PRIVATE
-        fmt
-)
-
-# -static-libgcc -static-libstdc++ SUPER IMPORTANT!
-# ucrt -std=c++20 -Wno-deprecated-enum-enum-conversion
-target_compile_definitions(${THIS_PROJECT_NAME} PUBLIC XXH_INLINE_ALL)
 
 if (WIN32)
     if(MSVC)
