@@ -71,3 +71,17 @@ else()
 endif()
 
 set(CMAKE_SKIP_RPATH ON)
+
+# https://discourse.cmake.org/t/installing-headers-the-modern-way-regurgitated-and-revisited/3238/3
+target_sources(${THIS_PROJECT_NAME} PUBLIC
+        FILE_SET public_headers
+        TYPE HEADERS
+        BASE_DIRS include
+        FILES
+        include/ossp/api.h
+        include/ossp/buffer.h
+        include/ossp/help.h
+        include/ossp/serialize.h
+)
+
+install(TARGETS ${THIS_PROJECT_NAME} FILE_SET public_headers)
