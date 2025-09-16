@@ -1,0 +1,8 @@
+# Binaries
+bin/
+
+cmake-build-*
+build
+.DS_Store
+.idea
+native

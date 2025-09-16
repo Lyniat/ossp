@@ -1,1 +1,9 @@
-# ossp
+# OService Serialization Protocol Implementation
+(De-)Serialize mRuby hashes to binary data
+
+- used by OService (link missing)
+- compatible with DragonRuby and standalone mRuby
+- easy to implement more protocols like (mRuby hashes <-> JSON)
+
+## OSSP Protocol
+[OService documentation](https://oservice.lyniat.games)
