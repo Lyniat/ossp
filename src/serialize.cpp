@@ -340,7 +340,7 @@ namespace lyniat::ossp::serialize::bin {
             return mrb_undef_value();
         }
 
-        if (binary_buffer->Read(&eod_position)) {
+        if (!binary_buffer->Read(&eod_position)) {
             return mrb_undef_value();
         }
 
@@ -348,8 +348,8 @@ namespace lyniat::ossp::serialize::bin {
             return mrb_undef_value();
         }
 
-        auto bb_size = (int64_t)binary_buffer->Size();
-        auto eof_start = bb_size - strlen(END_OF_FILE) - 1;
+        auto bb_size = binary_buffer->Size();
+        auto eof_start = bb_size - strlen(END_OF_FILE);
         if (eof_start < 0) {
             return mrb_undef_value();
         }
