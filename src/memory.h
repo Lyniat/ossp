@@ -35,5 +35,5 @@
 #endif
 
 #ifndef ossp_free
-#define ossp_free
+#define ossp_free free
 #endif
