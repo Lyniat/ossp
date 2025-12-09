@@ -27,8 +27,6 @@
 #include "api.h"
 #include <string>
 
-#include "../ossp/komihash.h"
-
 #define CEXT_INT(mrb,i) drb_api->mrb_int_value(mrb,i)
 
 #define STRINGIFY(x) STRINGIFY_IMPL(x)
@@ -197,11 +195,6 @@ inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, con
 
 inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_sym val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), SKEY(val));
-}
-
-inline uint64_t pext_symbol_komihash(mrb_state* state, mrb_sym symbol) {
-    const auto sym_str = mrb_sym_name(state, symbol);
-    return komihash(sym_str, strlen(sym_str), 0);
 }
 
 #undef SKEY

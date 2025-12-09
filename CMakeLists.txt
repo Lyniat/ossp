@@ -15,6 +15,16 @@ set_property(TARGET ${THIS_PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
 set_target_properties(${THIS_PROJECT_NAME} PROPERTIES OUTPUT_NAME "ossp")
 
+include(FetchContent)
+FetchContent_Declare(
+        byte-buffer
+        GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
+        GIT_TAG        45e8918b6961f1b0b124325e910b215ea3da01f3)
+
+FetchContent_MakeAvailable(byte-buffer)
+
+target_link_libraries(${THIS_PROJECT_NAME} PUBLIC byte-buffer)
+
 if (WIN32)
     if(MSVC)
         # ?
@@ -57,7 +67,6 @@ target_sources(${THIS_PROJECT_NAME} PUBLIC
         BASE_DIRS include
         FILES
         include/ossp/api.h
-        include/ossp/buffer.h
         include/ossp/help.h
         include/ossp/serialize.h
 )

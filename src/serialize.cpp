@@ -22,18 +22,18 @@
 * SOFTWARE.
 */
 
-#include "memory.h"
+#include <bytebuffer/buffer.h>
 #include "../include/ossp/serialize.h"
 #include "../include/ossp/help.h"
 #include "../include/ossp/api.h"
-#include "../include/ossp/buffer.h"
-#include "memory.h"
 #include "endian.inl"
+
+using namespace lyniat::memory::buffer;
 
 namespace lyniat::ossp::serialize::bin {
 
-    void __serialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* mrb, mrb_value data);
-    mrb_value __deserialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* mrb);
+    void __serialize_data(ByteBuffer* binary_buffer, mrb_state* mrb, mrb_value data);
+    mrb_value __deserialize_data(ByteBuffer* binary_buffer, mrb_state* mrb);
     serialized_type __get_st(mrb_value data);
 
     serialized_type get_min_bytes_for_signed(int64_t value) {
@@ -67,7 +67,7 @@ namespace lyniat::ossp::serialize::bin {
         return ST_ADV_BYTE_8;
     }
 
-    serialized_type split_int64_auto(int64_t value, buffer::BinaryBuffer* buffer) {
+    serialized_type split_int64_auto(int64_t value, ByteBuffer* buffer) {
         if (buffer == nullptr) {
             return ST_INVALID;
         }
@@ -115,7 +115,7 @@ namespace lyniat::ossp::serialize::bin {
         }
     }
     
-    bool add_hash_key(buffer::BinaryBuffer* binary_buffer, mrb_state* state, mrb_value key){
+    bool add_hash_key(ByteBuffer* binary_buffer, mrb_state* state, mrb_value key){
         auto key_type = __get_st(key);
 
         if(key_type == ST_STRING) {
@@ -159,7 +159,7 @@ namespace lyniat::ossp::serialize::bin {
         return true;
     }
 
-    bool set_hash_key(buffer::BinaryBuffer* binary_buffer, mrb_state* state, mrb_value hash){
+    bool set_hash_key(ByteBuffer* binary_buffer, mrb_state* state, mrb_value hash){
         serialized_type key_type;
         if (!binary_buffer->Read(&key_type)) {
             return false;
@@ -246,13 +246,16 @@ namespace lyniat::ossp::serialize::bin {
         return true;
     }
 
-    void start_serialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* state, mrb_value data) {
+    void start_serialize_data(ByteBuffer* binary_buffer, mrb_state* state, mrb_value data) {
         binary_buffer->Append(BE_MAGIC_NUMBER);
         binary_buffer->Append(EOD_POSITION);
         binary_buffer->Append(FLAGS);
         __serialize_data(binary_buffer, state, data);
         auto data_size = binary_buffer->Size();
-        auto be_data_size = bx::toBigEndian(data_size);
+        if (data_size > UINT32_MAX) {
+            // TODO: handle this problem just in case it should ever happen
+        }
+        auto be_data_size = bx::toBigEndian((uint32_t)data_size);
         binary_buffer->Append(END_OF_DATA, strlen(END_OF_DATA));
 
         binary_buffer->SetAt(sizeof(BE_MAGIC_NUMBER), be_data_size);
@@ -264,7 +267,7 @@ namespace lyniat::ossp::serialize::bin {
         binary_buffer->Append(END_OF_FILE, strlen(END_OF_FILE));
     }
 
-    void __serialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* state, mrb_value data) {
+    void __serialize_data(ByteBuffer* binary_buffer, mrb_state* state, mrb_value data) {
         auto stype = __get_st(data);
         auto type = (unsigned char)stype;
         if(stype == ST_FALSE || stype == ST_TRUE || stype == ST_NIL) {
@@ -328,7 +331,7 @@ namespace lyniat::ossp::serialize::bin {
             st_counter_t hash_size = 0;
             auto hash = mrb_hash_ptr(data);
 
-            typedef struct to_pass_t {buffer::BinaryBuffer* buffer; st_counter_t* counter;} to_pass_t;
+            typedef struct to_pass_t {ByteBuffer* buffer; st_counter_t* counter;} to_pass_t;
             to_pass_t to_pass = {binary_buffer, &hash_size};
 
             mrb_hash_foreach(state, hash, {[](mrb_state* intern_state, mrb_value key, mrb_value val, void* passed) -> int {
@@ -347,7 +350,7 @@ namespace lyniat::ossp::serialize::bin {
         }
     }
 
-    mrb_value start_deserialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* state) {
+    mrb_value start_deserialize_data(ByteBuffer* binary_buffer, mrb_state* state) {
         uint32_t magic_number;
         uint32_t eod_position;
         uint64_t flags;
@@ -368,10 +371,11 @@ namespace lyniat::ossp::serialize::bin {
         }
 
         auto bb_size = binary_buffer->Size();
-        auto eof_start = bb_size - strlen(END_OF_FILE);
-        if (eof_start < 0) {
+        auto eof_len = strlen(END_OF_FILE);
+        if (bb_size < eof_len) {
             return mrb_undef_value();
         }
+        auto eof_start = bb_size - eof_len;
 
         auto eof_content = std::string((const char*)binary_buffer->DataAt(eof_start), strlen(END_OF_FILE));
         if (eof_content != std::string(END_OF_DATA) && eof_content != std::string(END_OF_FILE)) {
@@ -388,7 +392,7 @@ namespace lyniat::ossp::serialize::bin {
         return __deserialize_data(binary_buffer, state);
     }
 
-    mrb_value __deserialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* state) {
+    mrb_value __deserialize_data(ByteBuffer* binary_buffer, mrb_state* state) {
         unsigned char bin_type;
         if (!binary_buffer->Read(&bin_type)) {
             return mrb_undef_value();

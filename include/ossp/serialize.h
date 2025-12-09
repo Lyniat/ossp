@@ -24,10 +24,10 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include "buffer.h"
+#include <bytebuffer/buffer.h>
 #include "../mruby.h"
+
+using namespace lyniat::memory::buffer;
 
 namespace lyniat::ossp::serialize {
     static constexpr std::uint32_t LE_MAGIC_NUMBER = 0x4F535350; //OSSP
@@ -69,7 +69,7 @@ namespace lyniat::ossp::serialize {
 }
 
 namespace lyniat::ossp::serialize::bin {
-    void start_serialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* mrb, mrb_value data);
+    void start_serialize_data(ByteBuffer* binary_buffer, mrb_state* mrb, mrb_value data);
 
-    mrb_value start_deserialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* mrb);
+    mrb_value start_deserialize_data(ByteBuffer* binary_buffer, mrb_state* mrb);
 }
