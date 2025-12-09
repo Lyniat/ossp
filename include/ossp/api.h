@@ -51,6 +51,8 @@ extern std::vector<mrb_value> value_list;
 extern std::vector<mrb_value> own_data_list;
 extern mrb_state* update_state;
 
-void push_to_updates(const std::string &event_type, mrb_value value);
+void push_to_updates(const std::string& event_type, mrb_value value);
+
 void push_to_updates(mrb_sym event_type, mrb_value value);
-void push_error(const std::string &event_type, int id);
+
+void push_error(const std::string& event_type, int id);
