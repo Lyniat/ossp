@@ -103,27 +103,47 @@
 #endif
 
 mrb_int cext_to_int(mrb_state* mrb, mrb_value value);
+
 mrb_float cext_to_float(mrb_state* mrb, mrb_value value);
+
 const char* cext_to_string(mrb_state* mrb, mrb_value value);
+
 mrb_sym cext_sym(mrb_state* mrb, const char* str);
+
 mrb_value cext_key(mrb_state* mrb, const char* str);
+
 mrb_value cext_hash_get(mrb_state* mrb, mrb_value hash, const char* key);
+
 mrb_int cext_hash_get_int(mrb_state* mrb, mrb_value hash, const char* key);
+
 const char* cext_hash_get_string(mrb_state* mrb, mrb_value hash, const char* key);
+
 mrb_sym cext_hash_get_sym(mrb_state* mrb, mrb_value hash, const char* key);
+
 mrb_value cext_hash_get_save_hash(mrb_state* mrb, mrb_value hash, const char* key);
+
 void cext_hash_set_kstr(mrb_state* mrb, mrb_value hash, const char* key, mrb_value val);
+
 void cext_hash_set_ksym(mrb_state* mrb, mrb_value hash, const char* key, mrb_value val);
+
 bool cext_is_string(mrb_state* mrb, mrb_value value);
+
 bool cext_is_symbol(mrb_state* mrb, mrb_value value);
+
 bool cext_is_int(mrb_state* mrb, mrb_value value);
+
 bool cext_is_hash(mrb_state* mrb, mrb_value value);
+
 bool cext_is_array(mrb_state* mrb, mrb_value value);
+
 bool cext_is_undef(mrb_state* mrb, mrb_value value);
+
 bool cext_is_valid_type(mrb_state* mrb, mrb_value value);
 
 mrb_int cext_hash_get_int_default(mrb_state* mrb, mrb_value hash, const char* key, mrb_int def);
+
 const char* cext_hash_get_string_default(mrb_state* mrb, mrb_value hash, const char* key, const char* def);
+
 mrb_sym cext_hash_get_sym_default(mrb_state* mrb, mrb_value hash, const char* key, mrb_sym def);
 
 
@@ -132,27 +152,27 @@ mrb_sym cext_hash_get_sym_default(mrb_state* mrb, mrb_value hash, const char* ke
 #define SKEY(KEY) mrb_symbol_value(KEY)
 
 //HASH sym
-inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_value val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_value val) {
     mrb_hash_set(state, hash, SKEY(key), val);
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_int val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_int val) {
     mrb_hash_set(state, hash, SKEY(key), mrb_int_value(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, const int val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, const int val) {
     mrb_hash_set(state, hash, SKEY(key), mrb_int_value(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_float val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_float val) {
     mrb_hash_set(state, hash, SKEY(key), mrb_float_value(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, const char*  val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, const char* val) {
     mrb_hash_set(state, hash, SKEY(key), mrb_str_new_cstr(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, const std::string &val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, const std::string& val) {
     mrb_hash_set(state, hash, SKEY(key), mrb_str_new_cstr(state, val.c_str()));
 }
 
@@ -165,27 +185,27 @@ inline void pext_hash_set(mrb_state* state, mrb_value hash, mrb_sym key, mrb_sym
 }
 
 // HASH string
-inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_value val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_value val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), val);
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_int val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_int val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), mrb_int_value(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, const int val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, const int val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), mrb_int_value(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_float val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb_float val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), mrb_float_value(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, const char*  val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, const char* val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), mrb_str_new_cstr(state, val));
 }
 
-inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, const std::string &val){
+inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, const std::string& val) {
     mrb_hash_set(state, hash, mrb_str_new_cstr(state, key), mrb_str_new_cstr(state, val.c_str()));
 }
 
@@ -200,8 +220,13 @@ inline void pext_hash_set(mrb_state* state, mrb_value hash, const char* key, mrb
 #undef SKEY
 
 mrb_sym pext_sym(mrb_state* state, const char* str);
-mrb_sym pext_sym(mrb_state* state, const std::string &val);
+
+mrb_sym pext_sym(mrb_state* state, const std::string& val);
+
 mrb_value pext_sym_val(mrb_state* state, const char* str);
-mrb_value pext_sym_val(mrb_state* state, const std::string &val);
+
+mrb_value pext_sym_val(mrb_state* state, const std::string& val);
+
 mrb_value pext_str(mrb_state* state, const char* str);
-mrb_value pext_str(mrb_state* state, const std::string &str);
+
+mrb_value pext_str(mrb_state* state, const std::string& str);
