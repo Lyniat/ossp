@@ -161,36 +161,51 @@ namespace lyniat::ossp::serialize::bin {
 
     bool set_hash_key(buffer::BinaryBuffer* binary_buffer, mrb_state* state, mrb_value hash){
         serialized_type key_type;
-        binary_buffer->Read(&key_type);
+        if (!binary_buffer->Read(&key_type)) {
+            return false;
+        }
         mrb_value key;
 
         if(key_type == ST_STRING) {
             st_counter_t key_size;
-            binary_buffer->Read(&key_size);
+            if (!binary_buffer->Read(&key_size)) {
+                return false;
+            }
             key_size = bx::toHostEndian(key_size, false);
-            auto str_ptr = mrb_calloc(state, 1, key_size);
-            binary_buffer->Read(str_ptr, key_size);
+            auto str_ptr = mrb_malloc(state, key_size);
+            if (!binary_buffer->Read(str_ptr, key_size)) {
+                return false;
+            }
             key = mrb_str_new(state, (const char*)str_ptr, key_size);
-            mrb_free(state, str_ptr); // TODO: Changed this! Test!
+            mrb_free(state, str_ptr);
         }
         else if(key_type == ST_SYMBOL) {
             st_counter_t key_size;
-            binary_buffer->Read(&key_size);
+            if (!binary_buffer->Read(&key_size)) {
+                return false;
+            }
             key_size = bx::toHostEndian(key_size, false);
-            auto str_ptr = mrb_calloc(state, 1, key_size);
-            binary_buffer->Read(str_ptr, key_size);
+            auto str_ptr = mrb_malloc(state, key_size);
+            if (!binary_buffer->Read(str_ptr, key_size)) {
+                return false;
+            }
             auto sym = mrb_intern_str(state, mrb_str_new(state, (const char*)str_ptr, key_size));
             key = mrb_symbol_value(sym);
+            mrb_free(state, str_ptr);
         }
         else if(key_type == ST_INT) {
             mrb_int num_key;
-            binary_buffer->Read(&num_key);
+            if (!binary_buffer->Read(&num_key)) {
+                return false;
+            }
             num_key = bx::toHostEndian(num_key, false);
             key = mrb_int_value(state, num_key);
         }
         else if(key_type == ST_FLOAT) {
             mrb_float num_key;
-            binary_buffer->Read(&num_key);
+            if (!binary_buffer->Read(&num_key)) {
+                return false;
+            }
             num_key = bx::toHostEndian(num_key, false);
             key = mrb_float_value(state, num_key);
         }
@@ -200,7 +215,9 @@ namespace lyniat::ossp::serialize::bin {
             int8_t byte;
             // first byte is sign
             //int8_t first_byte = (int8_t)buffer[1];
-            binary_buffer->Read(&byte);
+            if (!binary_buffer->Read(&byte)) {
+                return false;
+            }
 
             // add sign for negative numbers
             if (byte < 0) {
@@ -209,7 +226,9 @@ namespace lyniat::ossp::serialize::bin {
 
             // read bytes left to right (Big Endian)
             for (int i = 0; i < num_bytes; i++) {
-                binary_buffer->Read(&byte);
+                if (!binary_buffer->Read(&byte)) {
+                    return false;
+                }
                 value = (value << 8) | byte;
             }
 
@@ -371,7 +390,9 @@ namespace lyniat::ossp::serialize::bin {
 
     mrb_value __deserialize_data(buffer::BinaryBuffer* binary_buffer, mrb_state* state) {
         unsigned char bin_type;
-        binary_buffer->Read(&bin_type);
+        if (!binary_buffer->Read(&bin_type)) {
+            return mrb_undef_value();
+        }
         auto type = (serialized_type)bin_type;
 
         if (type == ST_FALSE) {
@@ -388,54 +409,75 @@ namespace lyniat::ossp::serialize::bin {
 
         if (type == ST_STRING) {
             st_counter_t data_size;
-            binary_buffer->Read(&data_size);
+            if (!binary_buffer->Read(&data_size)) {
+                return mrb_undef_value();
+            }
             data_size = bx::toHostEndian(data_size, false);
-            auto str_ptr = mrb_calloc(state, 1, data_size);
-            binary_buffer->Read(str_ptr, data_size);
+            auto str_ptr = mrb_malloc(state, data_size);
+            if (!binary_buffer->Read(str_ptr, data_size)) {
+                return mrb_undef_value();
+            }
             mrb_value data = mrb_str_new(state, (const char*)str_ptr, data_size);
+            mrb_free(state, str_ptr);
             return data;
         }
 
         if (type == ST_SYMBOL) {
             st_counter_t data_size;
-            binary_buffer->Read(&data_size);
+            if (!binary_buffer->Read(&data_size)) {
+                return mrb_undef_value();
+            }
             data_size = bx::toHostEndian(data_size, false);
             auto str_ptr = mrb_malloc(state, data_size);
-            binary_buffer->Read(str_ptr, data_size);
+            if (!binary_buffer->Read(str_ptr, data_size)) {
+                return mrb_undef_value();
+            }
             auto sym = mrb_intern_str(state, mrb_str_new(state, (const char*)str_ptr, data_size));
             auto data = mrb_symbol_value(sym);
+            mrb_free(state, str_ptr);
             return data;
         }
 
         if (type == ST_INT) {
             mrb_int num;
-            binary_buffer->Read(&num);
+            if (!binary_buffer->Read(&num)) {
+                return mrb_undef_value();
+            }
             num = bx::toHostEndian(num, false);
             return mrb_int_value(state, num);
         }
 
         if (type == ST_FLOAT) {
             mrb_float num;
-            binary_buffer->Read(&num);
+            if (!binary_buffer->Read(&num)) {
+                return mrb_undef_value();
+            }
             num = bx::toHostEndian(num, false);
             return mrb_float_value(state, num);
         }
 
         if (type == ST_HASH) {
             st_counter_t hash_size;
-            binary_buffer->Read(&hash_size);
+            if (!binary_buffer->Read(&hash_size)) {
+                return mrb_undef_value();
+            }
             hash_size = bx::toHostEndian(hash_size, false);
             mrb_value hash = mrb_hash_new_capa(state, hash_size);
 
             for (st_counter_t i = 0; i < hash_size; ++i) {
-                set_hash_key(binary_buffer, state, hash);
+                auto success = set_hash_key(binary_buffer, state, hash);
+                if (!success) {
+                    return mrb_undef_value();
+                }
             }
             return hash;
         }
 
         if (type == ST_ARRAY) {
             st_counter_t array_size;
-            binary_buffer->Read(&array_size);
+            if (!binary_buffer->Read(&array_size)) {
+                return mrb_undef_value();
+            }
             array_size = bx::toHostEndian(array_size, false);
             mrb_value array = mrb_ary_new_capa(state, array_size);
 
