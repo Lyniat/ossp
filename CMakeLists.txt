@@ -49,9 +49,9 @@ endif()
 # set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -g -fno-eliminate-unused-debug-symbols")
 
 # build type
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions(-DMETA_TYPE="Release")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DMETA_TYPE="Debug")
     add_definitions(-DDEBUG)
 else()
@@ -72,3 +72,13 @@ target_sources(${THIS_PROJECT_NAME} PUBLIC
 )
 
 install(TARGETS ${THIS_PROJECT_NAME} FILE_SET public_headers)
+
+include(CTest)
+
+add_executable(test_ossp_deep_diff test/test_ossp_deep_diff.cpp)
+set_property(TARGET test_ossp_deep_diff PROPERTY CXX_STANDARD 17)
+target_link_directories(test_ossp_deep_diff PRIVATE lib)
+target_link_libraries(test_ossp_deep_diff ${THIS_PROJECT_NAME} mruby)
+add_test(NAME "Test OSSP deep diff"
+        COMMAND test_ossp_deep_diff)
+

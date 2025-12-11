@@ -1,5 +1,7 @@
 # Binaries
 bin/
+lib/*
+!lib/.gitkeep
 
 cmake-build-*
 build
