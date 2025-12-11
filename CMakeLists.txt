@@ -77,7 +77,7 @@ include(CTest)
 
 add_executable(test_ossp_deep_diff test/test_ossp_deep_diff.cpp)
 set_property(TARGET test_ossp_deep_diff PROPERTY CXX_STANDARD 17)
-target_link_directories(test_ossp_deep_diff PRIVATE lib)
+target_link_directories(test_ossp_deep_diff PRIVATE test/lib)
 target_link_libraries(test_ossp_deep_diff ${THIS_PROJECT_NAME} mruby)
 add_test(NAME "Test OSSP deep diff"
         COMMAND test_ossp_deep_diff)

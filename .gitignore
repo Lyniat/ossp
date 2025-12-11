@@ -1,7 +1,10 @@
 # Binaries
 bin/
-lib/*
-!lib/.gitkeep
+*.a
+*.dylib
+*.so
+*.dll
+*.lib
 
 cmake-build-*
 build
