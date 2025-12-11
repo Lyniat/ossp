@@ -26,12 +26,8 @@ FetchContent_MakeAvailable(byte-buffer)
 target_link_libraries(${THIS_PROJECT_NAME} PUBLIC byte-buffer)
 
 if (WIN32)
-    if(MSVC)
-        # ?
-    else()
+    if(NOT MSVC)
         target_compile_options(${THIS_PROJECT_NAME} PUBLIC -fPIC -fno-rtti -fno-exceptions -Wno-deprecated-enum-enum-conversion)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
-        #target_link_options(${THIS_PROJECT_NAME} PUBLIC -static-libgcc -static-libstdc++) #needed?
     endif()
 elseif (APPLE)
     target_compile_options(${THIS_PROJECT_NAME} PUBLIC -fPIC -fno-rtti -fno-exceptions)
@@ -41,7 +37,7 @@ endif ()
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /MT")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
 else()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
