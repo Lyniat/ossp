@@ -19,7 +19,7 @@ include(FetchContent)
 FetchContent_Declare(
         byte-buffer
         GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
-        GIT_TAG        45e8918b6961f1b0b124325e910b215ea3da01f3)
+        GIT_TAG        0470ff516a1929075dc1471be8aaad95262bf67e)
 
 FetchContent_MakeAvailable(byte-buffer)
 
