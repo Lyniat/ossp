@@ -66,6 +66,7 @@
 #define mrb_class_path API->mrb_class_path
 #define mrb_close API->mrb_close
 #define mrbc_context_free API->mrbc_context_free
+#define mrb_raise API->mrb_raise
 #else
 #define mrb_hash_set mrb_hash_set
 #define mrb_hash_get mrb_hash_get
@@ -100,6 +101,7 @@
 #define mrb_class_path mrb_class_path
 #define mrb_close mrb_close
 #define mrbc_context_free mrbc_context_free
+#define mrb_raise mrb_raise
 #endif
 
 mrb_int cext_to_int(mrb_state* mrb, mrb_value value);
