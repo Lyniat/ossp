@@ -4,7 +4,7 @@
 
 ByteBuffer* serialized_data;
 
-#include "ruby_test_data.cpp.inc"
+#include "test_data.cpp.inc"
 #include "create_tests.cpp.inc"
 
 using namespace lyniat::ossp::serialize::bin;

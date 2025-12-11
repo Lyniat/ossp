@@ -51,6 +51,10 @@ def get_test_result
     puts $test_diff
     return $test_diff.size
 end
+
+def get_test_diff
+    return $test_diff.to_s
+end
 )";
 
 const std::string ruby_test_string = R"(
