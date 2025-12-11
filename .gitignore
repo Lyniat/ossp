@@ -1,5 +1,10 @@
 # Binaries
 bin/
+*.a
+*.dylib
+*.so
+*.dll
+*.lib
 
 cmake-build-*
 build

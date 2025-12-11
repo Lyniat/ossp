@@ -19,19 +19,15 @@ include(FetchContent)
 FetchContent_Declare(
         byte-buffer
         GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
-        GIT_TAG        45e8918b6961f1b0b124325e910b215ea3da01f3)
+        GIT_TAG        0470ff516a1929075dc1471be8aaad95262bf67e)
 
 FetchContent_MakeAvailable(byte-buffer)
 
 target_link_libraries(${THIS_PROJECT_NAME} PUBLIC byte-buffer)
 
 if (WIN32)
-    if(MSVC)
-        # ?
-    else()
+    if(NOT MSVC)
         target_compile_options(${THIS_PROJECT_NAME} PUBLIC -fPIC -fno-rtti -fno-exceptions -Wno-deprecated-enum-enum-conversion)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
-        #target_link_options(${THIS_PROJECT_NAME} PUBLIC -static-libgcc -static-libstdc++) #needed?
     endif()
 elseif (APPLE)
     target_compile_options(${THIS_PROJECT_NAME} PUBLIC -fPIC -fno-rtti -fno-exceptions)
@@ -41,7 +37,7 @@ endif ()
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /MT")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
 else()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
@@ -49,9 +45,9 @@ endif()
 # set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -g -fno-eliminate-unused-debug-symbols")
 
 # build type
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions(-DMETA_TYPE="Release")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DMETA_TYPE="Debug")
     add_definitions(-DDEBUG)
 else()
@@ -72,3 +68,37 @@ target_sources(${THIS_PROJECT_NAME} PUBLIC
 )
 
 install(TARGETS ${THIS_PROJECT_NAME} FILE_SET public_headers)
+
+option(BUILD_TESTING "Build Tests" ON)
+if (BUILD_TESTING)
+    enable_testing()
+
+    add_executable(test_ossp_01 test/test_ossp_01.cpp)
+    set_property(TARGET test_ossp_01 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_01 PRIVATE test/lib)
+    target_link_libraries(test_ossp_01 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 1"
+            COMMAND test_ossp_01)
+
+    add_executable(test_ossp_02 test/test_ossp_02.cpp)
+    set_property(TARGET test_ossp_02 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_02 PRIVATE test/lib)
+    target_link_libraries(test_ossp_02 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 2"
+            COMMAND test_ossp_02)
+
+    add_executable(test_ossp_03 test/test_ossp_03.cpp)
+    set_property(TARGET test_ossp_03 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_03 PRIVATE test/lib)
+    target_link_libraries(test_ossp_03 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 3"
+            COMMAND test_ossp_03)
+
+    add_executable(test_ossp_04 test/test_ossp_04.cpp)
+    set_property(TARGET test_ossp_04 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_04 PRIVATE test/lib)
+    target_link_libraries(test_ossp_04 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 4"
+            COMMAND test_ossp_04)
+
+endif ()
