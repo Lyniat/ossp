@@ -69,33 +69,36 @@ target_sources(${THIS_PROJECT_NAME} PUBLIC
 
 install(TARGETS ${THIS_PROJECT_NAME} FILE_SET public_headers)
 
-include(CTest)
+option(BUILD_TESTING "Build Tests" ON)
+if (BUILD_TESTING)
+    enable_testing()
 
-add_executable(test_ossp_01 test/test_ossp_01.cpp)
-set_property(TARGET test_ossp_01 PROPERTY CXX_STANDARD 17)
-target_link_directories(test_ossp_01 PRIVATE test/lib)
-target_link_libraries(test_ossp_01 ${THIS_PROJECT_NAME} mruby)
-add_test(NAME "Test OSSP 1"
-        COMMAND test_ossp_01)
+    add_executable(test_ossp_01 test/test_ossp_01.cpp)
+    set_property(TARGET test_ossp_01 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_01 PRIVATE test/lib)
+    target_link_libraries(test_ossp_01 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 1"
+            COMMAND test_ossp_01)
 
-add_executable(test_ossp_02 test/test_ossp_02.cpp)
-set_property(TARGET test_ossp_02 PROPERTY CXX_STANDARD 17)
-target_link_directories(test_ossp_02 PRIVATE test/lib)
-target_link_libraries(test_ossp_02 ${THIS_PROJECT_NAME} mruby)
-add_test(NAME "Test OSSP 2"
-        COMMAND test_ossp_02)
+    add_executable(test_ossp_02 test/test_ossp_02.cpp)
+    set_property(TARGET test_ossp_02 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_02 PRIVATE test/lib)
+    target_link_libraries(test_ossp_02 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 2"
+            COMMAND test_ossp_02)
 
-add_executable(test_ossp_03 test/test_ossp_03.cpp)
-set_property(TARGET test_ossp_03 PROPERTY CXX_STANDARD 17)
-target_link_directories(test_ossp_03 PRIVATE test/lib)
-target_link_libraries(test_ossp_03 ${THIS_PROJECT_NAME} mruby)
-add_test(NAME "Test OSSP 3"
-        COMMAND test_ossp_03)
+    add_executable(test_ossp_03 test/test_ossp_03.cpp)
+    set_property(TARGET test_ossp_03 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_03 PRIVATE test/lib)
+    target_link_libraries(test_ossp_03 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 3"
+            COMMAND test_ossp_03)
 
-add_executable(test_ossp_04 test/test_ossp_04.cpp)
-set_property(TARGET test_ossp_04 PROPERTY CXX_STANDARD 17)
-target_link_directories(test_ossp_04 PRIVATE test/lib)
-target_link_libraries(test_ossp_04 ${THIS_PROJECT_NAME} mruby)
-add_test(NAME "Test OSSP 4"
-        COMMAND test_ossp_04)
+    add_executable(test_ossp_04 test/test_ossp_04.cpp)
+    set_property(TARGET test_ossp_04 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_04 PRIVATE test/lib)
+    target_link_libraries(test_ossp_04 ${THIS_PROJECT_NAME} mruby)
+    add_test(NAME "Test OSSP 4"
+            COMMAND test_ossp_04)
 
+endif ()
