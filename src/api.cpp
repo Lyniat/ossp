@@ -23,7 +23,6 @@
 */
 
 #include "ossp/api.h"
-#include "ossp/help.h"
 
 #ifdef USE_DRGTK
 drb_api_t* drb_api;
