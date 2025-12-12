@@ -28,7 +28,6 @@ endif()
 
 set(CMAKE_SKIP_RPATH ON)
 
-# OSSP STANDALONE
 add_library(ossp STATIC ${SRC})
 set_target_properties(ossp PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "ossp")
 
@@ -63,35 +62,6 @@ target_sources(ossp PUBLIC
 )
 
 install(TARGETS ossp FILE_SET public_headers)
-
-# OSSP DRGTK
-option(BUILD_DRGTK "Build DRGTK" OFF)
-if(BUILD_DRGTK)
-    add_library(ossp_drgtk STATIC ${SRC})
-    add_compile_definitions(ossp_drgtk PUBLIC -DUSE_DRGTK)
-    set_target_properties(ossp_drgtk PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "ossp_drgtk")
-    target_link_libraries(ossp_drgtk PUBLIC byte-buffer)
-    if (WIN32)
-        if(NOT MSVC)
-            target_compile_options(ossp_drgtk PUBLIC -fPIC -fno-rtti -fno-exceptions -Wno-deprecated-enum-enum-conversion)
-        endif()
-    elseif (APPLE)
-        target_compile_options(ossp_drgtk PUBLIC -fPIC -fno-rtti -fno-exceptions)
-    elseif (UNIX)
-        target_compile_options(ossp_drgtk PUBLIC -fPIC -fno-rtti -fno-exceptions)
-    endif ()
-
-    target_sources(ossp_drgtk PUBLIC
-            FILE_SET public_headers
-            TYPE HEADERS
-            BASE_DIRS include
-            FILES
-            include/ossp/api.h
-            include/ossp/help.h
-            include/ossp/serialize.h
-    )
-    install(TARGETS ossp_drgtk FILE_SET public_headers)
-endif ()
 
 option(BUILD_TESTING "Build Tests" ON)
 if (BUILD_TESTING)
