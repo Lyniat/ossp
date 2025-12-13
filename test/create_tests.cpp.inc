@@ -3,6 +3,8 @@
 #include "ossp/serialize.h"
 #include <string>
 
+#include "ossp/ossp.h"
+
 using namespace lyniat::ossp::serialize::bin;
 
 int load_code(mrb_state* state, mrbc_context* context, const std::string& str) {
@@ -22,11 +24,17 @@ int create_test_data(mrb_state* state, mrbc_context* context) {
     mrb_define_module_function(state, module, "serialize", {
                                    [](mrb_state* state, mrb_value self) {
                                        mrb_value data;
-                                       mrb_get_args(state, "o", &data);
-                                       start_serialize_data(serialized_data, state, data);
+                                       char* meta_data = nullptr;
+                                       mrb_get_args(state, "o|z", &data, &meta_data);
+                                       if (meta_data != nullptr) {
+                                           auto str_meta_data = std::string(meta_data);
+                                           OSSP::Serialize(serialized_data, state, data, str_meta_data);
+                                       } else {
+                                           OSSP::Serialize(serialized_data, state, data);
+                                       }
                                        return mrb_nil_value();
                                    }
-                               }, MRB_ARGS_REQ(1));
+                               }, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
 
     if (state->exc) {
         mrb_funcall(state, mrb_obj_value(state->exc), "inspect", 0);
@@ -37,7 +45,7 @@ int create_test_data(mrb_state* state, mrbc_context* context) {
 
     mrb_define_module_function(state, module, "deserialize", {
                                    [](mrb_state* state, mrb_value self) {
-                                       auto data = start_deserialize_data(serialized_data, state);
+                                       auto data = OSSP::Deserialize(serialized_data, state);
                                        return data;
                                    }
                                }, MRB_ARGS_NONE());

@@ -94,4 +94,11 @@ if (BUILD_TESTING)
     target_link_libraries(test_ossp_04 ossp mruby)
     add_test(NAME "Test OSSP 4"
             COMMAND test_ossp_04)
+
+    add_executable(test_ossp_05 test/test_ossp_05.cpp)
+    set_property(TARGET test_ossp_05 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_05 PRIVATE test/lib)
+    target_link_libraries(test_ossp_05 ossp mruby)
+    add_test(NAME "Test OSSP 5"
+            COMMAND test_ossp_05)
 endif ()
