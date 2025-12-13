@@ -21,6 +21,8 @@ int main() {
 
     auto result = create_test_data(state, context);
     if (result != 0) {
+        mrbc_context_free(state, context);
+        mrb_close(state);
         delete serialized_data;
         return result;
     }
@@ -29,8 +31,25 @@ int main() {
     load_code(state, context, ruby_test_string_04);
     load_code(state, context, ruby_code_04);
 
+    auto test_size_diff = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_size_diff", 0);
+    auto test_int = static_cast<int>(mrb_integer(test_size_diff));
+    if (test_int == 0) {
+        mrbc_context_free(state, context);
+        mrb_close(state);
+        delete serialized_data;
+        return 1;
+    }
+
     auto test_diff = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_diff", 0);
     auto test_str = std::string(mrb_string_cstr(state, test_diff));
+
+    auto test_result = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_meta", 0);
+    if (!mrb_nil_p(test_result)) {
+        mrbc_context_free(state, context);
+        mrb_close(state);
+        delete serialized_data;
+        return 1;
+    }
 
     mrbc_context_free(state, context);
     mrb_close(state);

@@ -54,36 +54,30 @@ mrb_value OSSP::Deserialize(ByteBuffer* bb, mrb_state* mrb) {
         return mrb_undef_value();
     }
 
-    auto eof_content = std::string((const char*)bb->DataAt(eod_position), strlen(END_OF_FILE));
-    if (eof_content != std::string(END_OF_DATA) && eof_content != std::string(END_OF_FILE)) {
+    auto first_end_content = std::string((const char*)bb->DataAt(eod_position), strlen(END_OF_FILE));
+    bool has_meta_data = false;
+    if (first_end_content == std::string(END_OF_DATA)) {
+        has_meta_data = true;
+    } else if (first_end_content != std::string(END_OF_FILE)) {
         return mrb_undef_value();
     }
 
-
-    auto has_meta_data = eof_content == std::string(END_OF_DATA);
-    std::string meta_data_str;
+    mrb_value ossp_meta_data = mrb_nil_value();
     if (has_meta_data) {
         auto bb_end = std::string((const char*)bb->DataAt(bb_size - strlen(END_OF_FILE)), strlen(END_OF_FILE));
         if (bb_end != std::string(END_OF_FILE)) {
             return mrb_undef_value();
         }
-        meta_data_str = std::string((const char*)bb->DataAt(eod_position + strlen(END_OF_DATA)), bb_size - eod_position);
-    }
-
-    auto eod_content = std::string((const char*)bb->DataAt(eod_position), strlen(END_OF_FILE));
-
-    if (eod_content != END_OF_DATA && eod_content != END_OF_FILE) {
-        return mrb_undef_value();
+        auto str_n = bb_size - eod_position - strlen(END_OF_DATA) - strlen(END_OF_FILE);
+        auto meta_str = std::string((const char*)bb->DataAt(eod_position + strlen(END_OF_DATA)), str_n);
+        ossp_meta_data = mrb_str_new_cstr(mrb, meta_str.c_str());
     }
 
     auto deserialized = DeserializeRecursive(bb, mrb);
+
     mrb_value array = mrb_ary_new_capa(mrb, 2);
     mrb_ary_set(mrb, array, 0, deserialized);
-    if (has_meta_data) {
-        mrb_ary_set(mrb, array, 1, mrb_str_new_cstr(mrb, meta_data_str.c_str()));
-    } else {
-        mrb_ary_set(mrb, array, 1, mrb_nil_value());
-    }
+    mrb_ary_set(mrb, array, 1, ossp_meta_data);
     return array;
 }
 
@@ -474,6 +468,10 @@ serialized_type OSSP::GetMinBytes(int64_t value) {
     }
 
     return ST_ADV_BYTE_8;
+}
+
+static std::string GetMetaData(ByteBuffer* bb, mrb_state* mrb) {
+
 }
 
 }

@@ -24,8 +24,16 @@ int main() {
     load_code(state, context, ruby_test_string);
     load_code(state, context, ruby_code);
 
-    auto test_result = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_result", 0);
-    auto test_int = static_cast<int>(mrb_integer(test_result));
+    auto test_size_diff = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_size_diff", 0);
+    auto test_int = static_cast<int>(mrb_integer(test_size_diff));
+
+    auto test_result = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_meta", 0);
+    if (!mrb_nil_p(test_result)) {
+        mrbc_context_free(state, context);
+        mrb_close(state);
+        delete serialized_data;
+        return 1;
+    }
 
     mrbc_context_free(state, context);
     mrb_close(state);

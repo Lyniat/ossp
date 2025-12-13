@@ -47,13 +47,16 @@ def deep_diff(a, b, path = [])
     end
 end
 
-def get_test_result
-    puts $test_diff
-    return $test_diff.size
+def get_test_meta
+    return $result_meta
 end
 
 def get_test_diff
     return $test_diff.to_s
+end
+
+def get_test_size_diff
+    return $test_diff.size
 end
 )";
 

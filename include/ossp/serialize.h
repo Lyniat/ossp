@@ -67,9 +67,3 @@ enum serialized_type : unsigned char {
     ST_INVALID = 255,
 };
 }
-
-namespace lyniat::ossp::serialize::bin {
-void start_serialize_data(ByteBuffer* binary_buffer, mrb_state* mrb, mrb_value data);
-
-mrb_value start_deserialize_data(ByteBuffer* binary_buffer, mrb_state* mrb);
-}
