@@ -25,30 +25,40 @@ void OSSP::Serialize(ByteBuffer* bb, mrb_state* mrb, mrb_value data, const std::
     }
 }
 
-mrb_value OSSP::Deserialize(ReadBuffer* bb, mrb_state* mrb) {
+tl::expected<mrb_value, OSSPErrorInfo> OSSP::Deserialize(ReadBuffer* bb, mrb_state* mrb) {
     uint32_t magic_number;
     uint32_t eod_position;
     uint64_t flags;
     if (!bb->ReadWithEndian(&magic_number, endian)) {
-        return mrb_undef_value();
+        auto error = OSSPReadingError;
+        error.position = bb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
     if (magic_number != LE_MAGIC_NUMBER) {
-        return mrb_undef_value();
+        auto error = OSSPMagicNumberError;
+        error.position = bb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
     if (!bb->ReadWithEndian(&eod_position, endian)) {
-        return mrb_undef_value();
+        auto error = OSSPReadingError;
+        error.position = bb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
     if (!bb->ReadWithEndian(&flags, endian)) {
-        return mrb_undef_value();
+        auto error = OSSPReadingError;
+        error.position = bb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
     auto bb_size = bb->Size();
     auto eof_len = strlen(END_OF_FILE);
     if (bb_size < eof_len) {
-        return mrb_undef_value();
+        auto error = OSSPWrongBufferSizeError;
+        error.position = bb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
     std::string first_end_content;
@@ -57,16 +67,20 @@ mrb_value OSSP::Deserialize(ReadBuffer* bb, mrb_state* mrb) {
     if (first_end_content == std::string(END_OF_DATA)) {
         has_meta_data = true;
     } else if (first_end_content != std::string(END_OF_FILE)) {
-        return mrb_undef_value();
+        auto error = OSSPEOFError;
+        error.position = eod_position;
+        return tl::unexpected(error);
     }
 
     mrb_value ossp_meta_data = mrb_nil_value();
     if (has_meta_data) {
-        //auto bb_end = std::string((const char*)bb->DataAt(bb_size - strlen(END_OF_FILE)), strlen(END_OF_FILE));
         std::string bb_end;
-        bb->ReadStringAt((bb_size - strlen(END_OF_FILE)),&bb_end ,strlen(END_OF_FILE));
+        auto read_bb_end_pos = bb_size - strlen(END_OF_FILE);
+        bb->ReadStringAt(read_bb_end_pos,&bb_end ,strlen(END_OF_FILE));
         if (bb_end != std::string(END_OF_FILE)) {
-            return mrb_undef_value();
+            auto error = OSSPEOFError;
+            error.position = read_bb_end_pos;
+            return tl::unexpected(error);
         }
         auto str_n = bb_size - eod_position - strlen(END_OF_DATA) - strlen(END_OF_FILE);
         //auto meta_str = std::string((const char*)bb->DataAt(eod_position + strlen(END_OF_DATA)), str_n);
@@ -76,11 +90,13 @@ mrb_value OSSP::Deserialize(ReadBuffer* bb, mrb_state* mrb) {
     }
 
     auto deserialized = DeserializeRecursive(bb, mrb);
-
-    mrb_value array = mrb_ary_new_capa(mrb, 2);
-    mrb_ary_set(mrb, array, 0, deserialized);
-    mrb_ary_set(mrb, array, 1, ossp_meta_data);
-    return array;
+    if (deserialized) {
+        mrb_value array = mrb_ary_new_capa(mrb, 2);
+        mrb_ary_set(mrb, array, 0, deserialized.value<>());
+        mrb_ary_set(mrb, array, 1, ossp_meta_data);
+        return array;
+    }
+    return deserialized;
 }
 
 void OSSP::SerializeRecursive(ByteBuffer* bb, mrb_state* mrb, mrb_value data) {
@@ -145,10 +161,12 @@ void OSSP::SerializeRecursive(ByteBuffer* bb, mrb_state* mrb, mrb_value data) {
     }
 }
 
-mrb_value OSSP::DeserializeRecursive(ReadBuffer* rb, mrb_state* mrb) {
+tl::expected<mrb_value, OSSPErrorInfo> OSSP::DeserializeRecursive(ReadBuffer* rb, mrb_state* mrb) {
 uint8_t bin_type;
     if (!rb->ReadWithEndian(&bin_type, endian)) {
-        return mrb_undef_value();
+        auto error = OSSPReadingError;
+        error.position = rb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
     auto type = (serialized_type)bin_type;
 
@@ -167,11 +185,15 @@ uint8_t bin_type;
     if (type == ST_STRING) {
         st_counter_t data_size;
         if (!rb->ReadWithEndian(&data_size, endian)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         auto str_ptr = mrb_malloc(mrb, data_size);
         if (!rb->Read((char*)str_ptr, data_size)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         mrb_value data = mrb_str_new(mrb, (const char*)str_ptr, data_size);
         mrb_free(mrb, str_ptr);
@@ -181,11 +203,15 @@ uint8_t bin_type;
     if (type == ST_SYMBOL) {
         st_counter_t data_size;
         if (!rb->ReadWithEndian(&data_size, endian)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         auto str_ptr = mrb_malloc(mrb, data_size);
         if (!rb->Read((char*)str_ptr, data_size)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         auto sym = mrb_intern_str(mrb, mrb_str_new(mrb, (const char*)str_ptr, data_size));
         auto data = mrb_symbol_value(sym);
@@ -196,7 +222,9 @@ uint8_t bin_type;
     if (type == ST_INT) {
         mrb_int num;
         if (!rb->ReadWithEndian(&num, endian)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         return mrb_int_value(mrb, num);
     }
@@ -204,7 +232,9 @@ uint8_t bin_type;
     if (type == ST_FLOAT) {
         mrb_float num;
         if (!rb->ReadWithEndian(&num, endian)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         return mrb_float_value(mrb, num);
     }
@@ -212,14 +242,18 @@ uint8_t bin_type;
     if (type == ST_HASH) {
         st_counter_t hash_size;
         if (!rb->ReadWithEndian(&hash_size, endian)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         mrb_value hash = mrb_hash_new_capa(mrb, hash_size);
 
         for (st_counter_t i = 0; i < hash_size; ++i) {
             auto success = SetHashKey(rb, mrb, hash);
             if (!success) {
-                return mrb_undef_value();
+                auto error = OSSPReadingError;
+                error.position = rb->CurrentReadingPos();
+                return tl::unexpected(error);
             }
         }
         return hash;
@@ -228,13 +262,18 @@ uint8_t bin_type;
     if (type == ST_ARRAY) {
         st_counter_t array_size;
         if (!rb->ReadWithEndian(&array_size, endian)) {
-            return mrb_undef_value();
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         mrb_value array = mrb_ary_new_capa(mrb, array_size);
 
         for (st_counter_t i = 0; i < array_size; ++i) {
-            mrb_value data = DeserializeRecursive(rb, mrb);
-            mrb_ary_set(mrb, array, i, data);
+            auto data = DeserializeRecursive(rb, mrb);
+            if (!data) {
+                return data;
+            }
+            mrb_ary_set(mrb, array, i, data.value<>());
         }
         return array;
     }
@@ -243,35 +282,47 @@ uint8_t bin_type;
         return mrb_nil_value();
     }
 
-    return mrb_undef_value();
+    auto error = OSSPErrorInfoInvalidType;
+    error.position = rb->CurrentReadingPos();
+    return tl::unexpected(error);
 }
 
-bool OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
+tl::expected<mrb_value, OSSPErrorInfo> OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
     serialized_type key_type;
     if (!rb->ReadWithEndian((u_int8_t*)&key_type, endian)) {
-        return false;
+        auto error = OSSPReadingError;
+        error.position = rb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
     mrb_value key;
 
     if (key_type == ST_STRING) {
         st_counter_t key_size;
         if (!rb->ReadWithEndian(&key_size, endian)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         auto str_ptr = mrb_malloc(state, key_size);
         if (!rb->Read((char*)str_ptr, key_size)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         key = mrb_str_new(state, (const char*)str_ptr, key_size);
         mrb_free(state, str_ptr);
     } else if (key_type == ST_SYMBOL) {
         st_counter_t key_size;
         if (!rb->ReadWithEndian(&key_size, endian)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         auto str_ptr = mrb_malloc(state, key_size);
         if (!rb->Read((char*)str_ptr, key_size)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         auto sym = mrb_intern_str(state, mrb_str_new(state, (const char*)str_ptr, key_size));
         key = mrb_symbol_value(sym);
@@ -279,13 +330,17 @@ bool OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
     } else if (key_type == ST_INT) {
         mrb_int num_key;
         if (!rb->ReadWithEndian(&num_key, endian)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         key = mrb_int_value(state, num_key);
     } else if (key_type == ST_FLOAT) {
         mrb_float num_key;
         if (!rb->ReadWithEndian(&num_key, endian)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
         key = mrb_float_value(state, num_key);
     } else if (key_type >= ST_ADV_BYTE_1 && key_type <= ST_ADV_BYTE_8) {
@@ -295,7 +350,9 @@ bool OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
         // first byte is sign
         //int8_t first_byte = (int8_t)buffer[1];
         if (!rb->ReadWithEndian(&byte, endian)) {
-            return false;
+            auto error = OSSPReadingError;
+            error.position = rb->CurrentReadingPos();
+            return tl::unexpected(error);
         }
 
         // add sign for negative numbers
@@ -306,7 +363,9 @@ bool OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
         // read bytes left to right (Big Endian)
         for (size_t i = 0; i < num_bytes; i++) {
             if (!rb->ReadWithEndian(&byte, endian)) {
-                return false;
+                auto error = OSSPReadingError;
+                error.position = rb->CurrentReadingPos();
+                return tl::unexpected(error);
             }
             value = (value << 8) | byte;
         }
@@ -314,16 +373,20 @@ bool OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
         //bb->ReadWithEndian(&num_key, endian);
         //key = mrb_int_value(state, num_key);
     } else {
-        return false;
+        auto error = OSSPErrorInfoInvalidType;
+        error.position = rb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
-    mrb_value data = DeserializeRecursive(rb, state);
-
-    mrb_hash_set(state, hash, key, data);
-    return true;
+    auto data = DeserializeRecursive(rb, state);
+    if (!data) {
+        return data;
+    }
+    mrb_hash_set(state, hash, key, data.value<>());
+    return {};
 }
 
-bool OSSP::AddHashKey(ByteBuffer* bb, mrb_state* state, mrb_value key) {
+tl::expected<mrb_value, OSSPErrorInfo> OSSP::AddHashKey(ByteBuffer* bb, mrb_state* state, mrb_value key) {
     auto key_type = GetType(key);
 
     if (key_type == ST_STRING) {
@@ -353,10 +416,12 @@ bool OSSP::AddHashKey(ByteBuffer* bb, mrb_state* state, mrb_value key) {
         bb->AppendWithEndian((uint8_t)ST_FLOAT, endian);
         bb->AppendWithEndian(num_key, endian);
     } else {
-        return false;
+        auto error = OSSPErrorInfoInvalidType;
+        error.position = bb->CurrentReadingPos();
+        return tl::unexpected(error);
     }
 
-    return true;
+    return {};
 }
 
 serialized_type OSSP::GetType(mrb_value data) {
