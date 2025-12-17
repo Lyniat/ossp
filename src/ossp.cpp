@@ -87,66 +87,61 @@ void OSSP::SerializeRecursive(ByteBuffer* bb, mrb_state* mrb, mrb_value data) {
     auto stype = GetType(data);
     auto type = (uint8_t)stype;
     if (stype == ST_FALSE || stype == ST_TRUE || stype == ST_NIL) {
-        bb->Append(type);
+        bb->AppendWithEndian((uint8_t)type, endian);
     } else if (stype == ST_INT) {
         mrb_int number = cext_to_int(mrb, data);
         #ifdef ADV_SER
         split_int64_auto(number, bb);
         #else
-        bb->Append(ST_INT);
+        bb->AppendWithEndian((uint8_t)ST_INT, endian);
         bb->AppendWithEndian(number, endian);
         #endif
     } else if (stype == ST_FLOAT) {
         mrb_float number = cext_to_float(mrb, data);
-        bb->Append(ST_FLOAT);
+        bb->AppendWithEndian((uint8_t)ST_FLOAT, endian);
         bb->AppendWithEndian(number, endian);
     } else if (stype == ST_STRING) {
         const char* string = cext_to_string(mrb, data);
         st_counter_t str_len = strlen(string); // + 1; we SKIP this intentionally
-        bb->Append(ST_STRING);
+        bb->AppendWithEndian((uint8_t)ST_STRING, endian);
         bb->AppendWithEndian(str_len, endian);
         bb->Append((char*)string, str_len);
     } else if (stype == ST_SYMBOL) {
         const char* string = mrb_sym_name(mrb, mrb_obj_to_sym(mrb, data));
         st_counter_t str_len = strlen(string); // + 1; we SKIP this intentionally
-        bb->Append(ST_SYMBOL);
+        bb->AppendWithEndian((uint8_t)ST_SYMBOL, endian);
         bb->AppendWithEndian(str_len, endian);
         bb->Append((char*)string, str_len);
     } else if (stype == ST_ARRAY) {
-        bb->Append(ST_ARRAY);
-        auto current_pos = bb->CurrentReadingPos();
-        bb->Append((st_counter_t)0); // array_size
+        bb->AppendWithEndian((uint8_t)ST_ARRAY, endian);
         st_counter_t array_size = RARRAY_LEN(data);
+        bb->AppendWithEndian(array_size, endian);
         for (mrb_int i = 0; i < array_size; i++) {
             auto object = RARRAY_PTR(data)[i];
             SerializeRecursive(bb, mrb, object);
         }
-        bb->SetAtWithEndian(current_pos, array_size, endian);
     } else if (stype == ST_HASH) {
-        bb->Append(ST_HASH);
+        bb->AppendWithEndian((uint8_t)ST_HASH, endian);
         auto current_pos = bb->CurrentReadingPos();
-        bb->Append((st_counter_t)0); // hash_size
-        st_counter_t hash_size = 0;
         auto hash = mrb_hash_ptr(data);
+
+        st_counter_t hash_size = mrb_hash_size(mrb, data);
+        bb->AppendWithEndian(hash_size, endian);
 
         typedef struct to_pass_t {
             ByteBuffer* buffer;
-            st_counter_t* counter;
         } to_pass_t;
-        to_pass_t to_pass = {bb, &hash_size};
+        to_pass_t to_pass = {bb};
 
         mrb_hash_foreach(mrb, hash, {[](mrb_state* intern_state, mrb_value key, mrb_value val, void* passed) -> int {
             auto to_pass = (to_pass_t*)passed;
             auto bb = to_pass->buffer;
-            st_counter_t* hash_size = to_pass->counter;
 
             if (AddHashKey(bb, intern_state, key)) {
                 SerializeRecursive(bb, intern_state, val);
-                *hash_size += 1;
             }
             return 0;
         }}, &to_pass);
-        bb->SetAtWithEndian(current_pos, hash_size, endian);
     }
 }
 
@@ -394,7 +389,7 @@ serialized_type OSSP::SplitInt64(int64_t value, ByteBuffer* bb) {
 
     // Big Endian: MSB first
     for (size_t i = 0; i < n_bytes; i++) {
-        int shift = (n_bytes - 1 - i) * 8;
+        size_t shift = (n_bytes - 1 - i) * 8;
         bb->Append((uint8_t)((value >> shift) & 0xFF));
     }
 
