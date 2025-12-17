@@ -35,7 +35,7 @@ include(FetchContent)
 FetchContent_Declare(
         byte-buffer
         GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
-        GIT_TAG        0470ff516a1929075dc1471be8aaad95262bf67e)
+        GIT_TAG        9dddaa927077f309112a8ad949a7996fbdf72c3b)
 FetchContent_MakeAvailable(byte-buffer)
 
 target_link_libraries(ossp PUBLIC byte-buffer)
@@ -101,4 +101,11 @@ if (BUILD_TESTING)
     target_link_libraries(test_ossp_05 ossp mruby)
     add_test(NAME "Test OSSP 5"
             COMMAND test_ossp_05)
+
+    add_executable(test_ossp_06 test/test_ossp_06.cpp)
+    set_property(TARGET test_ossp_06 PROPERTY CXX_STANDARD 17)
+    target_link_directories(test_ossp_06 PRIVATE test/lib)
+    target_link_libraries(test_ossp_06 ossp mruby)
+    add_test(NAME "Test OSSP 6"
+            COMMAND test_ossp_06)
 endif ()

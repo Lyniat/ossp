@@ -101,3 +101,23 @@ OSSP.serialize($test_data)
 $result, $result_meta = OSSP.deserialize()
 $test_diff = deep_diff($test_data, $result)
 )";
+
+const std::string ruby_code_serialize = R"(
+OSSP.serialize($test_data)
+)";
+
+const std::string ruby_code_deserialize = R"(
+$result, $result_meta = OSSP.deserialize()
+)";
+
+const std::string ruby_code_serialize_and_save = R"(
+OSSP.serialize_and_save($test_data)
+)";
+
+const std::string ruby_code_load_and_deserialize = R"(
+$result, $result_meta = OSSP.load_and_deserialize()
+)";
+
+const std::string ruby_code_diff = R"(
+$test_diff = deep_diff($test_data, $result)
+)";

@@ -1,50 +1,47 @@
 #include "ossp/ossp.h"
 
-#include "endian.inl"
 #include "ossp/help.h"
 #include "ossp/serialize.h"
 
 namespace lyniat::ossp::serialize::bin {
+
 void OSSP::Serialize(ByteBuffer* bb, mrb_state* mrb, mrb_value data, const std::string& meta_data) {
-    bb->Append(BE_MAGIC_NUMBER);
-    bb->Append(EOD_POSITION);
-    bb->Append(FLAGS);
+    bb->AppendWithEndian(LE_MAGIC_NUMBER, endian);
+    bb->AppendWithEndian(EOD_POSITION, endian);
+    bb->AppendWithEndian(FLAGS, endian);
     SerializeRecursive(bb, mrb, data);
     auto data_size = bb->Size();
     if (data_size > UINT32_MAX) {
         // TODO: handle this problem just in case it should ever happen
     }
-    auto be_data_size = bx::toBigEndian((uint32_t)data_size);
-    bb->SetAt(sizeof(BE_MAGIC_NUMBER), be_data_size);
+    bb->SetAtWithEndian(sizeof(LE_MAGIC_NUMBER), (uint32_t)data_size, endian);
 
     if (!meta_data.empty()) {
         bb->Append(END_OF_DATA, strlen(END_OF_DATA));
-        bb->Append(meta_data);
+        bb->AppendString(meta_data);
         bb->Append(END_OF_FILE, strlen(END_OF_FILE));
     } else {
         bb->Append(END_OF_FILE, strlen(END_OF_FILE));
     }
 }
 
-mrb_value OSSP::Deserialize(ByteBuffer* bb, mrb_state* mrb) {
+mrb_value OSSP::Deserialize(ReadBuffer* bb, mrb_state* mrb) {
     uint32_t magic_number;
     uint32_t eod_position;
     uint64_t flags;
-    if (!bb->Read(&magic_number)) {
+    if (!bb->ReadWithEndian(&magic_number, endian)) {
         return mrb_undef_value();
     }
 
-    if (magic_number != BE_MAGIC_NUMBER) {
+    if (magic_number != LE_MAGIC_NUMBER) {
         return mrb_undef_value();
     }
 
-    if (!bb->Read(&eod_position)) {
+    if (!bb->ReadWithEndian(&eod_position, endian)) {
         return mrb_undef_value();
     }
 
-    eod_position = bx::toHostEndian(eod_position, false);
-
-    if (!bb->Read(&flags)) {
+    if (!bb->ReadWithEndian(&flags, endian)) {
         return mrb_undef_value();
     }
 
@@ -54,7 +51,8 @@ mrb_value OSSP::Deserialize(ByteBuffer* bb, mrb_state* mrb) {
         return mrb_undef_value();
     }
 
-    auto first_end_content = std::string((const char*)bb->DataAt(eod_position), strlen(END_OF_FILE));
+    std::string first_end_content;
+    bb->ReadStringAt(eod_position, &first_end_content, strlen(END_OF_DATA));
     bool has_meta_data = false;
     if (first_end_content == std::string(END_OF_DATA)) {
         has_meta_data = true;
@@ -64,12 +62,16 @@ mrb_value OSSP::Deserialize(ByteBuffer* bb, mrb_state* mrb) {
 
     mrb_value ossp_meta_data = mrb_nil_value();
     if (has_meta_data) {
-        auto bb_end = std::string((const char*)bb->DataAt(bb_size - strlen(END_OF_FILE)), strlen(END_OF_FILE));
+        //auto bb_end = std::string((const char*)bb->DataAt(bb_size - strlen(END_OF_FILE)), strlen(END_OF_FILE));
+        std::string bb_end;
+        bb->ReadStringAt((bb_size - strlen(END_OF_FILE)),&bb_end ,strlen(END_OF_FILE));
         if (bb_end != std::string(END_OF_FILE)) {
             return mrb_undef_value();
         }
         auto str_n = bb_size - eod_position - strlen(END_OF_DATA) - strlen(END_OF_FILE);
-        auto meta_str = std::string((const char*)bb->DataAt(eod_position + strlen(END_OF_DATA)), str_n);
+        //auto meta_str = std::string((const char*)bb->DataAt(eod_position + strlen(END_OF_DATA)), str_n);
+        std::string meta_str;
+        bb->ReadStringAt((eod_position + strlen(END_OF_DATA)), &meta_str, str_n);
         ossp_meta_data = mrb_str_new_cstr(mrb, meta_str.c_str());
     }
 
@@ -83,7 +85,7 @@ mrb_value OSSP::Deserialize(ByteBuffer* bb, mrb_state* mrb) {
 
 void OSSP::SerializeRecursive(ByteBuffer* bb, mrb_state* mrb, mrb_value data) {
     auto stype = GetType(data);
-    auto type = (unsigned char)stype;
+    auto type = (uint8_t)stype;
     if (stype == ST_FALSE || stype == ST_TRUE || stype == ST_NIL) {
         bb->Append(type);
     } else if (stype == ST_INT) {
@@ -91,44 +93,38 @@ void OSSP::SerializeRecursive(ByteBuffer* bb, mrb_state* mrb, mrb_value data) {
         #ifdef ADV_SER
         split_int64_auto(number, bb);
         #else
-        number = bx::toBigEndian(number);
         bb->Append(ST_INT);
-        bb->Append(number);
+        bb->AppendWithEndian(number, endian);
         #endif
     } else if (stype == ST_FLOAT) {
         mrb_float number = cext_to_float(mrb, data);
-        number = bx::toBigEndian(number);
         bb->Append(ST_FLOAT);
-        bb->Append(number);
+        bb->AppendWithEndian(number, endian);
     } else if (stype == ST_STRING) {
         const char* string = cext_to_string(mrb, data);
         st_counter_t str_len = strlen(string); // + 1; we SKIP this intentionally
-        auto str_len_big_endian = bx::toBigEndian(str_len);
         bb->Append(ST_STRING);
-        bb->Append(str_len_big_endian);
-        bb->Append((void*)string, str_len);
+        bb->AppendWithEndian(str_len, endian);
+        bb->Append((char*)string, str_len);
     } else if (stype == ST_SYMBOL) {
         const char* string = mrb_sym_name(mrb, mrb_obj_to_sym(mrb, data));
         st_counter_t str_len = strlen(string); // + 1; we SKIP this intentionally
-        auto str_len_big_endian = bx::toBigEndian(str_len);
         bb->Append(ST_SYMBOL);
-        bb->Append(str_len_big_endian);
-        bb->Append((void*)string, str_len);
+        bb->AppendWithEndian(str_len, endian);
+        bb->Append((char*)string, str_len);
     } else if (stype == ST_ARRAY) {
         bb->Append(ST_ARRAY);
-        auto current_pos = bb->CurrentPos();
+        auto current_pos = bb->CurrentReadingPos();
         bb->Append((st_counter_t)0); // array_size
-        st_counter_t array_size = 0;
-        for (mrb_int i = 0; i < RARRAY_LEN(data); i++) {
+        st_counter_t array_size = RARRAY_LEN(data);
+        for (mrb_int i = 0; i < array_size; i++) {
             auto object = RARRAY_PTR(data)[i];
             SerializeRecursive(bb, mrb, object);
-            array_size++;
         }
-        array_size = bx::toBigEndian(array_size);
-        bb->SetAt(current_pos, array_size);
+        bb->SetAtWithEndian(current_pos, array_size, endian);
     } else if (stype == ST_HASH) {
         bb->Append(ST_HASH);
-        auto current_pos = bb->CurrentPos();
+        auto current_pos = bb->CurrentReadingPos();
         bb->Append((st_counter_t)0); // hash_size
         st_counter_t hash_size = 0;
         auto hash = mrb_hash_ptr(data);
@@ -150,14 +146,13 @@ void OSSP::SerializeRecursive(ByteBuffer* bb, mrb_state* mrb, mrb_value data) {
             }
             return 0;
         }}, &to_pass);
-        hash_size = bx::toBigEndian(hash_size);
-        bb->SetAt(current_pos, hash_size);
+        bb->SetAtWithEndian(current_pos, hash_size, endian);
     }
 }
 
-mrb_value OSSP::DeserializeRecursive(ByteBuffer* bb, mrb_state* mrb) {
-unsigned char bin_type;
-    if (!bb->Read(&bin_type)) {
+mrb_value OSSP::DeserializeRecursive(ReadBuffer* rb, mrb_state* mrb) {
+uint8_t bin_type;
+    if (!rb->ReadWithEndian(&bin_type, endian)) {
         return mrb_undef_value();
     }
     auto type = (serialized_type)bin_type;
@@ -176,12 +171,11 @@ unsigned char bin_type;
 
     if (type == ST_STRING) {
         st_counter_t data_size;
-        if (!bb->Read(&data_size)) {
+        if (!rb->ReadWithEndian(&data_size, endian)) {
             return mrb_undef_value();
         }
-        data_size = bx::toHostEndian(data_size, false);
         auto str_ptr = mrb_malloc(mrb, data_size);
-        if (!bb->Read(str_ptr, data_size)) {
+        if (!rb->Read((char*)str_ptr, data_size)) {
             return mrb_undef_value();
         }
         mrb_value data = mrb_str_new(mrb, (const char*)str_ptr, data_size);
@@ -191,12 +185,11 @@ unsigned char bin_type;
 
     if (type == ST_SYMBOL) {
         st_counter_t data_size;
-        if (!bb->Read(&data_size)) {
+        if (!rb->ReadWithEndian(&data_size, endian)) {
             return mrb_undef_value();
         }
-        data_size = bx::toHostEndian(data_size, false);
         auto str_ptr = mrb_malloc(mrb, data_size);
-        if (!bb->Read(str_ptr, data_size)) {
+        if (!rb->Read((char*)str_ptr, data_size)) {
             return mrb_undef_value();
         }
         auto sym = mrb_intern_str(mrb, mrb_str_new(mrb, (const char*)str_ptr, data_size));
@@ -207,32 +200,29 @@ unsigned char bin_type;
 
     if (type == ST_INT) {
         mrb_int num;
-        if (!bb->Read(&num)) {
+        if (!rb->ReadWithEndian(&num, endian)) {
             return mrb_undef_value();
         }
-        num = bx::toHostEndian(num, false);
         return mrb_int_value(mrb, num);
     }
 
     if (type == ST_FLOAT) {
         mrb_float num;
-        if (!bb->Read(&num)) {
+        if (!rb->ReadWithEndian(&num, endian)) {
             return mrb_undef_value();
         }
-        num = bx::toHostEndian(num, false);
         return mrb_float_value(mrb, num);
     }
 
     if (type == ST_HASH) {
         st_counter_t hash_size;
-        if (!bb->Read(&hash_size)) {
+        if (!rb->ReadWithEndian(&hash_size, endian)) {
             return mrb_undef_value();
         }
-        hash_size = bx::toHostEndian(hash_size, false);
         mrb_value hash = mrb_hash_new_capa(mrb, hash_size);
 
         for (st_counter_t i = 0; i < hash_size; ++i) {
-            auto success = SetHashKey(bb, mrb, hash);
+            auto success = SetHashKey(rb, mrb, hash);
             if (!success) {
                 return mrb_undef_value();
             }
@@ -242,14 +232,13 @@ unsigned char bin_type;
 
     if (type == ST_ARRAY) {
         st_counter_t array_size;
-        if (!bb->Read(&array_size)) {
+        if (!rb->ReadWithEndian(&array_size, endian)) {
             return mrb_undef_value();
         }
-        array_size = bx::toHostEndian(array_size, false);
         mrb_value array = mrb_ary_new_capa(mrb, array_size);
 
         for (st_counter_t i = 0; i < array_size; ++i) {
-            mrb_value data = DeserializeRecursive(bb, mrb);
+            mrb_value data = DeserializeRecursive(rb, mrb);
             mrb_ary_set(mrb, array, i, data);
         }
         return array;
@@ -262,33 +251,31 @@ unsigned char bin_type;
     return mrb_undef_value();
 }
 
-bool OSSP::SetHashKey(ByteBuffer* bb, mrb_state* state, mrb_value hash) {
+bool OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
     serialized_type key_type;
-    if (!bb->Read(&key_type)) {
+    if (!rb->ReadWithEndian((u_int8_t*)&key_type, endian)) {
         return false;
     }
     mrb_value key;
 
     if (key_type == ST_STRING) {
         st_counter_t key_size;
-        if (!bb->Read(&key_size)) {
+        if (!rb->ReadWithEndian(&key_size, endian)) {
             return false;
         }
-        key_size = bx::toHostEndian(key_size, false);
         auto str_ptr = mrb_malloc(state, key_size);
-        if (!bb->Read(str_ptr, key_size)) {
+        if (!rb->Read((char*)str_ptr, key_size)) {
             return false;
         }
         key = mrb_str_new(state, (const char*)str_ptr, key_size);
         mrb_free(state, str_ptr);
     } else if (key_type == ST_SYMBOL) {
         st_counter_t key_size;
-        if (!bb->Read(&key_size)) {
+        if (!rb->ReadWithEndian(&key_size, endian)) {
             return false;
         }
-        key_size = bx::toHostEndian(key_size, false);
         auto str_ptr = mrb_malloc(state, key_size);
-        if (!bb->Read(str_ptr, key_size)) {
+        if (!rb->Read((char*)str_ptr, key_size)) {
             return false;
         }
         auto sym = mrb_intern_str(state, mrb_str_new(state, (const char*)str_ptr, key_size));
@@ -296,49 +283,46 @@ bool OSSP::SetHashKey(ByteBuffer* bb, mrb_state* state, mrb_value hash) {
         mrb_free(state, str_ptr);
     } else if (key_type == ST_INT) {
         mrb_int num_key;
-        if (!bb->Read(&num_key)) {
+        if (!rb->ReadWithEndian(&num_key, endian)) {
             return false;
         }
-        num_key = bx::toHostEndian(num_key, false);
         key = mrb_int_value(state, num_key);
     } else if (key_type == ST_FLOAT) {
         mrb_float num_key;
-        if (!bb->Read(&num_key)) {
+        if (!rb->ReadWithEndian(&num_key, endian)) {
             return false;
         }
-        num_key = bx::toHostEndian(num_key, false);
         key = mrb_float_value(state, num_key);
     } else if (key_type >= ST_ADV_BYTE_1 && key_type <= ST_ADV_BYTE_8) {
         auto num_bytes = key_type - ST_ADV_BYTE_1 + 1;
         int64_t value = 0;
-        int8_t byte;
+        uint8_t byte;
         // first byte is sign
         //int8_t first_byte = (int8_t)buffer[1];
-        if (!bb->Read(&byte)) {
+        if (!rb->ReadWithEndian(&byte, endian)) {
             return false;
         }
 
         // add sign for negative numbers
         if (byte < 0) {
-            value = -1LL; // Alle Bits auf 1 setzen
+            value = -1LL; // Set all bits to 1
         }
 
         // read bytes left to right (Big Endian)
-        for (int i = 0; i < num_bytes; i++) {
-            if (!bb->Read(&byte)) {
+        for (size_t i = 0; i < num_bytes; i++) {
+            if (!rb->ReadWithEndian(&byte, endian)) {
                 return false;
             }
             value = (value << 8) | byte;
         }
 
-        //bb->Read(&num_key);
-        auto num_key = bx::toHostEndian(value, false);
-        key = mrb_int_value(state, num_key);
+        //bb->ReadWithEndian(&num_key, endian);
+        //key = mrb_int_value(state, num_key);
     } else {
         return false;
     }
 
-    mrb_value data = DeserializeRecursive(bb, state);
+    mrb_value data = DeserializeRecursive(rb, state);
 
     mrb_hash_set(state, hash, key, data);
     return true;
@@ -349,34 +333,30 @@ bool OSSP::AddHashKey(ByteBuffer* bb, mrb_state* state, mrb_value key) {
 
     if (key_type == ST_STRING) {
         auto s_key = mrb_string_cstr(state, key);
-        bb->Append(ST_STRING);
+        bb->AppendWithEndian((uint8_t)ST_STRING, endian);
         st_counter_t str_len = strlen(s_key); // + 1; we SKIP this intentionally
-        auto str_len_big_endian = bx::toBigEndian(str_len);
-        bb->Append(str_len_big_endian);
-        bb->Append((void*)s_key, str_len);
+        bb->AppendWithEndian(str_len, endian);
+        bb->Append((char*)s_key, str_len);
     } else if (key_type == ST_SYMBOL) {
         auto s_key = mrb_sym_name(state, mrb_obj_to_sym(state, key));
-        bb->Append(ST_SYMBOL);
+        bb->AppendWithEndian((uint8_t)ST_SYMBOL, endian);
         st_counter_t str_len = strlen(s_key); // + 1; we SKIP this intentionally
-        auto str_len_big_endian = bx::toBigEndian(str_len);
-        bb->Append(str_len_big_endian);
-        bb->Append((void*)s_key, str_len);
+        bb->AppendWithEndian(str_len, endian);
+        bb->Append((char*)s_key, str_len);
     } else if (key_type == ST_INT) {
         auto num_key = cext_to_int(state, key);
 
         #ifdef ADV_SER
         split_int64_auto(num_key, bb);
         #else
-        num_key = bx::toBigEndian(num_key);
-        bb->Append(ST_INT);
-        bb->Append(num_key);
+        bb->AppendWithEndian((uint8_t)ST_INT, endian);
+        bb->AppendWithEndian(num_key, endian);
         #endif
 
     } else if (key_type == ST_FLOAT) {
         auto num_key = cext_to_float(state, key);
-        num_key = bx::toBigEndian(num_key);
-        bb->Append(ST_FLOAT);
-        bb->Append(num_key);
+        bb->AppendWithEndian((uint8_t)ST_FLOAT, endian);
+        bb->AppendWithEndian(num_key, endian);
     } else {
         return false;
     }
@@ -409,13 +389,11 @@ serialized_type OSSP::SplitInt64(int64_t value, ByteBuffer* bb) {
 
     auto st = GetMinBytes(value);
 
-    bb->Append(st);
+    bb->AppendWithEndian((uint8_t)st, endian);
     auto n_bytes = st - ST_ADV_BYTE_1 + 1;
 
-    value = bx::toBigEndian(value);
-
     // Big Endian: MSB first
-    for (int i = 0; i < n_bytes; i++) {
+    for (size_t i = 0; i < n_bytes; i++) {
         int shift = (n_bytes - 1 - i) * 8;
         bb->Append((uint8_t)((value >> shift) & 0xFF));
     }
@@ -468,10 +446,6 @@ serialized_type OSSP::GetMinBytes(int64_t value) {
     }
 
     return ST_ADV_BYTE_8;
-}
-
-static std::string GetMetaData(ByteBuffer* bb, mrb_state* mrb) {
-
 }
 
 }

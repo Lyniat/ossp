@@ -40,7 +40,5 @@ const std::string ruby_code_05 = R"(
 $test_meta_data = "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin. He lay on his armour-like back, and if he lifted his head a little he could see his brown belly, slightly domed and divided by arches into stiff sections."
 OSSP.serialize($test_data, $test_meta_data)
 $result, $result_meta = OSSP.deserialize()
-puts $result
-puts $result_meta
 $test_diff = deep_diff($test_data, $result)
 )";
