@@ -289,7 +289,7 @@ uint8_t bin_type;
 
 tl::expected<mrb_value, OSSPErrorInfo> OSSP::SetHashKey(ReadBuffer* rb, mrb_state* state, mrb_value hash) {
     serialized_type key_type;
-    if (!rb->ReadWithEndian((u_int8_t*)&key_type, endian)) {
+    if (!rb->ReadWithEndian((uint8_t*)&key_type, endian)) {
         auto error = OSSPReadingError;
         error.position = rb->CurrentReadingPos();
         return tl::unexpected(error);
