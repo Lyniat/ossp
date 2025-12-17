@@ -72,6 +72,9 @@
 #define mrb_define_module_under API->mrb_define_module_under
 #define mrb_load_string_cxt API->mrb_load_string_cxt
 #define mrb_obj_value API->mrb_obj_value
+#define mrb_exc_get_id API->mrb_exc_get_id
+#define mrb_hash_size API->mrb_hash_size
+#define mrb_intern_static API->mrb_intern_static
 #else
 #define mrb_hash_set mrb_hash_set
 #define mrb_hash_get mrb_hash_get
@@ -112,6 +115,9 @@
 #define mrb_define_module_under mrb_define_module_under
 #define mrb_load_string_cxt mrb_load_string_cxt
 #define mrb_obj_value mrb_obj_value
+#define mrb_exc_get_id mrb_exc_get_id
+#define mrb_hash_size mrb_hash_size
+#define mrb_intern_static mrb_intern_static
 #endif
 
 mrb_int cext_to_int(mrb_state* mrb, mrb_value value);
