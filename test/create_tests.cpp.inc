@@ -1,9 +1,13 @@
 #include "mruby.h"
 #include "mruby/compile.h"
-#include "ossp/serialize.h"
 #include <string>
+#include <iostream>
 
 #include "ossp/ossp.h"
+
+#define ERR_ENDL(msg) std::cerr << msg << std::endl; return 1;
+#define ERR(msg) std::cerr << msg;
+#define FREE_MRB mrbc_context_free(state, context); mrb_close(state);
 
 using namespace lyniat::ossp::serialize::bin;
 
