@@ -24,7 +24,37 @@ int run_test() {
     }
 
     load_code(state, context, ruby_test_string);
-    load_code(state, context, ruby_code);
+    load_code(state, context, ruby_code_serialize);
+
+    auto test_path = std::filesystem::current_path().append(test_file_name);
+    auto hash = serialized_data->Hash();
+    if (!serialized_data->WriteToDisk(test_path)) {
+        FREE_MRB
+        delete serialized_data;
+        ERR_ENDL("Creating test data failed!")
+    }
+
+    auto read_data = new ByteBuffer(test_path);
+    if (read_data->Size() == 0) {
+        delete serialized_data;
+        delete read_data;
+        FREE_MRB
+        return 1;
+    }
+    auto read_hash = read_data->Hash();
+
+    if (hash != read_hash) {
+        delete serialized_data;
+        delete read_data;
+        FREE_MRB
+        return 1;
+    }
+
+    delete serialized_data;
+    serialized_data = read_data;
+
+    load_code(state, context, ruby_code_deserialize);
+    load_code(state, context, ruby_code_diff);
 
     auto test_size_diff = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_size_diff", 0);
     auto test_int = static_cast<int>(mrb_integer(test_size_diff));

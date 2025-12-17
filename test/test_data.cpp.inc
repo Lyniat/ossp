@@ -47,13 +47,16 @@ def deep_diff(a, b, path = [])
     end
 end
 
-def get_test_result
-    puts $test_diff
-    return $test_diff.size
+def get_test_meta
+    return $result_meta
 end
 
 def get_test_diff
     return $test_diff.to_s
+end
+
+def get_test_size_diff
+    return $test_diff.size
 end
 )";
 
@@ -95,6 +98,26 @@ $test_data = {
 
 const std::string ruby_code = R"(
 OSSP.serialize($test_data)
-$result = OSSP.deserialize()
+$result, $result_meta = OSSP.deserialize()
+$test_diff = deep_diff($test_data, $result)
+)";
+
+const std::string ruby_code_serialize = R"(
+OSSP.serialize($test_data)
+)";
+
+const std::string ruby_code_deserialize = R"(
+$result, $result_meta = OSSP.deserialize()
+)";
+
+const std::string ruby_code_serialize_and_save = R"(
+OSSP.serialize_and_save($test_data)
+)";
+
+const std::string ruby_code_load_and_deserialize = R"(
+$result, $result_meta = OSSP.load_and_deserialize()
+)";
+
+const std::string ruby_code_diff = R"(
 $test_diff = deep_diff($test_data, $result)
 )";
