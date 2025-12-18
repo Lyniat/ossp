@@ -38,13 +38,13 @@ static constexpr uint32_t EOD_POSITION = 0;
 static constexpr uint32_t EOF_POSITION = 0;
 static constexpr uint64_t FLAGS = 0;
 
-static constexpr u_int8_t FLAG_SERVER = 0b00000001;
-static constexpr u_int8_t FLAG_CLIENTS = 0b00000010;
-static constexpr u_int8_t FLAG_SELF = 0b00000100;
+static constexpr uint8_t FLAG_SERVER = 0b00000001;
+static constexpr uint8_t FLAG_CLIENTS = 0b00000010;
+static constexpr uint8_t FLAG_SELF = 0b00000100;
 
 typedef uint16_t st_counter_t;
 
-enum serialized_type : u_int8_t {
+enum serialized_type : uint8_t {
     ST_FALSE = 0,
     ST_TRUE,
     ST_INT,

@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "ossp/ossp.h"
+#include "tl/expected.hpp"
 
 #define ERR_ENDL(msg) std::cerr << msg << std::endl; return 1;
 #define ERR(msg) std::cerr << msg;
@@ -17,7 +18,7 @@ int load_code(mrb_state* state, mrbc_context* context, const std::string& str) {
     mrb_load_string_cxt(state, str.c_str(), context);
 
     if (state->exc) {
-        mrb_funcall(state, mrb_obj_value(state->exc), "inspect", 0);
+        mrb_print_error(state);
         mrbc_context_free(state, context);
         mrb_close(state);
         return 1;
@@ -60,30 +61,40 @@ int create_test_data(mrb_state* state, mrbc_context* context) {
                            }, MRB_ARGS_REQ(1) | MRB_ARGS_OPT(1));
 
     if (state->exc) {
-        mrb_funcall(state, mrb_obj_value(state->exc), "inspect", 0);
+        mrb_print_error(state);
         mrbc_context_free(state, context);
         mrb_close(state);
         return 1;
     }
 
     mrb_define_module_function(state, module, "deserialize", {
-                                   [](mrb_state* state, mrb_value self) {
-                                       auto data = OSSP::Deserialize(serialized_data, state);
-                                       return data;
+                                   [](mrb_state* mrb, mrb_value self) {
+                                       auto data = OSSP::Deserialize(serialized_data, mrb);
+                                       if (data) {
+                                           return data.value<>();
+                                       }
+                                       auto error = generate_OSSP_error_message(data.error());
+                                       std::cout << error << std::endl;
+                                       mrb_raise(mrb, E_RUNTIME_ERROR, error.c_str());
                                    }
                                }, MRB_ARGS_NONE());
 
     mrb_define_module_function(state, module, "load_and_deserialize", {
-                               [](mrb_state* state, mrb_value self) {
+                               [](mrb_state* mrb, mrb_value self) {
                                    auto test_path = std::filesystem::current_path().append(test_file_name);
                                    serialized_data = new ByteBuffer(test_path);
-                                   auto data = OSSP::Deserialize(serialized_data, state);
-                                   return data;
+                                   auto data = OSSP::Deserialize(serialized_data, mrb);
+                                   if (data) {
+                                          return data.value<>();
+                                   }
+                                   auto error = generate_OSSP_error_message(data.error());
+                                   std::cout << error << std::endl;
+                                   mrb_raise(mrb, E_RUNTIME_ERROR, error.c_str());
                                }
                            }, MRB_ARGS_NONE());
 
     if (state->exc) {
-        mrb_funcall(state, mrb_obj_value(state->exc), "inspect", 0);
+        mrb_print_error(state);
         mrbc_context_free(state, context);
         mrb_close(state);
         return 1;
