@@ -35,7 +35,7 @@ include(FetchContent)
 FetchContent_Declare(
         byte-buffer
         GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
-        GIT_TAG        6a1bc852ccd0c7423b6bfda398129a38e7562b04)
+        GIT_TAG        7caadf537e76deeff46d36363fc49889017d9ae8)
 FetchContent_MakeAvailable(byte-buffer)
 
 target_link_libraries(ossp PUBLIC byte-buffer)
@@ -44,10 +44,14 @@ if (WIN32)
     if(NOT MSVC)
         target_compile_options(ossp PUBLIC -fPIC -fno-rtti -fno-exceptions -Wno-deprecated-enum-enum-conversion)
     endif()
+    set(MRUBY_LIB_DIR test/lib/windows-amd64)
 elseif (APPLE)
     target_compile_options(ossp PUBLIC -fPIC -fno-rtti -fno-exceptions)
+    set(MRUBY_LIB_DIR test/lib/macos)
 elseif (UNIX)
     target_compile_options(ossp PUBLIC -fPIC -fno-rtti -fno-exceptions)
+    set(MRUBY_LIB_DIR test/lib/linux-amd64)
+    # set(MRUBY_LIB_DIR test/lib/linux-arm64)
 endif ()
 
 # https://discourse.cmake.org/t/installing-headers-the-modern-way-regurgitated-and-revisited/3238/3
@@ -69,42 +73,42 @@ if (BUILD_TESTING)
 
     add_executable(test_ossp_01 test/test_ossp_01.cpp)
     set_property(TARGET test_ossp_01 PROPERTY CXX_STANDARD 17)
-    target_link_directories(test_ossp_01 PRIVATE test/lib)
+    target_link_directories(test_ossp_01 PRIVATE ${MRUBY_LIB_DIR})
     target_link_libraries(test_ossp_01 ossp mruby)
     add_test(NAME "Test OSSP 1"
             COMMAND test_ossp_01)
 
     add_executable(test_ossp_02 test/test_ossp_02.cpp)
     set_property(TARGET test_ossp_02 PROPERTY CXX_STANDARD 17)
-    target_link_directories(test_ossp_02 PRIVATE test/lib)
+    target_link_directories(test_ossp_02 PRIVATE ${MRUBY_LIB_DIR})
     target_link_libraries(test_ossp_02 ossp mruby)
     add_test(NAME "Test OSSP 2"
             COMMAND test_ossp_02)
 
     add_executable(test_ossp_03 test/test_ossp_03.cpp)
     set_property(TARGET test_ossp_03 PROPERTY CXX_STANDARD 17)
-    target_link_directories(test_ossp_03 PRIVATE test/lib)
+    target_link_directories(test_ossp_03 PRIVATE ${MRUBY_LIB_DIR})
     target_link_libraries(test_ossp_03 ossp mruby)
     add_test(NAME "Test OSSP 3"
             COMMAND test_ossp_03)
 
     add_executable(test_ossp_04 test/test_ossp_04.cpp)
     set_property(TARGET test_ossp_04 PROPERTY CXX_STANDARD 17)
-    target_link_directories(test_ossp_04 PRIVATE test/lib)
+    target_link_directories(test_ossp_04 PRIVATE ${MRUBY_LIB_DIR})
     target_link_libraries(test_ossp_04 ossp mruby)
     add_test(NAME "Test OSSP 4"
             COMMAND test_ossp_04)
 
     add_executable(test_ossp_05 test/test_ossp_05.cpp)
     set_property(TARGET test_ossp_05 PROPERTY CXX_STANDARD 17)
-    target_link_directories(test_ossp_05 PRIVATE test/lib)
+    target_link_directories(test_ossp_05 PRIVATE ${MRUBY_LIB_DIR})
     target_link_libraries(test_ossp_05 ossp mruby)
     add_test(NAME "Test OSSP 5"
             COMMAND test_ossp_05)
 
     add_executable(test_ossp_06 test/test_ossp_06.cpp)
     set_property(TARGET test_ossp_06 PROPERTY CXX_STANDARD 17)
-    target_link_directories(test_ossp_06 PRIVATE test/lib)
+    target_link_directories(test_ossp_06 PRIVATE ${MRUBY_LIB_DIR})
     target_link_libraries(test_ossp_06 ossp mruby)
     add_test(NAME "Test OSSP 6"
             COMMAND test_ossp_06)
