@@ -61,6 +61,7 @@
 #define mrb_define_module_function API->mrb_define_module_function
 #define mrb_get_args API->mrb_get_args
 #define mrb_module_get API->mrb_module_get
+#define mrb_class_get API->mrb_class_get
 #define mrb_class_get_under API->mrb_class_get_under
 #define mrb_load_string API->mrb_load_string
 #define mrb_class_path API->mrb_class_path
@@ -75,6 +76,8 @@
 #define mrb_exc_get_id API->mrb_exc_get_id
 #define mrb_hash_size API->mrb_hash_size
 #define mrb_intern_static API->mrb_intern_static
+#define mrb_obj_new API->mrb_obj_new
+#define mrb_class_new_instance API->mrb_class_new_instance
 #else
 #define mrb_hash_set mrb_hash_set
 #define mrb_hash_get mrb_hash_get
@@ -104,6 +107,7 @@
 #define mrb_define_module_function mrb_define_module_function
 #define mrb_get_args mrb_get_args
 #define mrb_module_get mrb_module_get
+#define mrb_class_get mrb_class_get
 #define mrb_class_get_under mrb_class_get_under
 #define mrb_load_string mrb_load_string
 #define mrb_class_path mrb_class_path
@@ -118,6 +122,8 @@
 #define mrb_exc_get_id mrb_exc_get_id
 #define mrb_hash_size mrb_hash_size
 #define mrb_intern_static mrb_intern_static
+#define mrb_obj_new mrb_obj_new
+#define mrb_class_new_instance mrb_class_new_instance
 #endif
 
 mrb_int cext_to_int(mrb_state* mrb, mrb_value value);
