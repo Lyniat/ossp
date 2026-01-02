@@ -1,3 +1,4 @@
+#include "test_data_05.cpp.inc"
 #include "mruby/compile.h"
 #include "ossp/help.h"
 #include "ossp/serialize.h"
@@ -23,22 +24,32 @@ int run_test() {
         ERR_ENDL("Creating test data failed!")
     }
 
-    load_code(state, context, ruby_test_string);
-    load_code(state, context, ruby_code);
+    load_code(state, context, ruby_test_string_05);
+    load_code(state, context, ruby_code_05);
 
     auto test_size_diff = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_size_diff", 0);
     auto test_int = static_cast<int>(mrb_integer(test_size_diff));
-
-    auto test_result = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_meta", 0);
-    if (!mrb_nil_p(test_result)) {
+    if (test_int != 0) {
         FREE_MRB
         delete serialized_data;
         return 1;
     }
 
+    auto test_result = mrb_funcall(state, mrb_obj_value(state->exc), "get_test_meta", 0);
+    if (mrb_type(test_result) != MRB_TT_STRING) {
+        FREE_MRB
+        delete serialized_data;
+        return 1;
+    }
+    auto test_str = std::string(mrb_string_cstr(state, test_result));
+
     FREE_MRB
     delete serialized_data;
-    return test_int;
+
+    if (test_str == "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin. He lay on his armour-like back, and if he lifted his head a little he could see his brown belly, slightly domed and divided by arches into stiff sections.") {
+        return 0;
+    }
+    return 1;
 }
 
 int main() {

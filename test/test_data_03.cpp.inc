@@ -41,6 +41,6 @@ $test_data_03 = {
 
 const std::string ruby_code_03 = R"(
 OSSP.serialize($test_data)
-$result = OSSP.deserialize()
+$result, $result_meta = OSSP.deserialize()
 $test_diff = deep_diff($test_data_03, $result)
 )";

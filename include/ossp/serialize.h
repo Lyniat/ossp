@@ -24,27 +24,27 @@
 
 #pragma once
 
-#include <bytebuffer/buffer.h>
+#include <bytebuffer/ByteBuffer.h>
 #include "../mruby.h"
 
 using namespace lyniat::memory::buffer;
 
 namespace lyniat::ossp::serialize {
-static constexpr std::uint32_t LE_MAGIC_NUMBER = 0x4F535350; //OSSP
-static constexpr uint32_t BE_MAGIC_NUMBER = 0x5053534F;      //OSSP
+static constexpr uint32_t LE_MAGIC_NUMBER = 0x4F535350;      //OSSP
+//static constexpr uint32_t BE_MAGIC_NUMBER = 0x5053534F;      //OSSP
 static const char* END_OF_DATA = "EOD";                      // EOD
 static const char* END_OF_FILE = "EOF";                      // EOF
 static constexpr uint32_t EOD_POSITION = 0;
 static constexpr uint32_t EOF_POSITION = 0;
 static constexpr uint64_t FLAGS = 0;
 
-static constexpr unsigned char FLAG_SERVER = 0b00000001;
-static constexpr unsigned char FLAG_CLIENTS = 0b00000010;
-static constexpr unsigned char FLAG_SELF = 0b00000100;
+static constexpr uint8_t FLAG_SERVER = 0b00000001;
+static constexpr uint8_t FLAG_CLIENTS = 0b00000010;
+static constexpr uint8_t FLAG_SELF = 0b00000100;
 
-typedef unsigned short int st_counter_t;
+typedef uint16_t st_counter_t;
 
-enum serialized_type : unsigned char {
+enum serialized_type : uint8_t {
     ST_FALSE = 0,
     ST_TRUE,
     ST_INT,
@@ -66,10 +66,4 @@ enum serialized_type : unsigned char {
     ST_ADV_BYTE_8,
     ST_INVALID = 255,
 };
-}
-
-namespace lyniat::ossp::serialize::bin {
-void start_serialize_data(ByteBuffer* binary_buffer, mrb_state* mrb, mrb_value data);
-
-mrb_value start_deserialize_data(ByteBuffer* binary_buffer, mrb_state* mrb);
 }
