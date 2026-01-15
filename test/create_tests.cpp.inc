@@ -76,6 +76,9 @@ int create_test_data(mrb_state* state, mrbc_context* context) {
                                        auto error = generate_OSSP_error_message(data.error());
                                        std::cout << error << std::endl;
                                        mrb_raise(mrb, E_RUNTIME_ERROR, error.c_str());
+                                       // Return value is needed for OService build
+                                       // ReSharper disable once CppDFAUnreachableCode
+                                       return mrb_nil_value();
                                    }
                                }, MRB_ARGS_NONE());
 
