@@ -35,21 +35,21 @@ include(FetchContent)
 FetchContent_Declare(
         byte-buffer
         GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
-        GIT_TAG        7caadf537e76deeff46d36363fc49889017d9ae8)
+        GIT_TAG        8ad265450682772ef4c387efb00fcb9d0cc22de4)
 FetchContent_MakeAvailable(byte-buffer)
 
 target_link_libraries(ossp PUBLIC byte-buffer)
 
 if (WIN32)
     if(NOT MSVC)
-        target_compile_options(ossp PUBLIC -fPIC -fno-rtti -fno-exceptions -Wno-deprecated-enum-enum-conversion)
+        target_compile_options(ossp PUBLIC -fPIC -fno-rtti -Wno-deprecated-enum-enum-conversion)
     endif()
     set(MRUBY_LIB_DIR test/lib/windows-amd64)
 elseif (APPLE)
-    target_compile_options(ossp PUBLIC -fPIC -fno-rtti -fno-exceptions)
+    target_compile_options(ossp PUBLIC -fPIC -fno-rtti)
     set(MRUBY_LIB_DIR test/lib/macos)
 elseif (UNIX)
-    target_compile_options(ossp PUBLIC -fPIC -fno-rtti -fno-exceptions)
+    target_compile_options(ossp PUBLIC -fPIC -fno-rtti)
     set(MRUBY_LIB_DIR test/lib/linux-amd64)
     # set(MRUBY_LIB_DIR test/lib/linux-arm64)
 endif ()
