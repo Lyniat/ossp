@@ -35,7 +35,7 @@ include(FetchContent)
 FetchContent_Declare(
         byte-buffer
         GIT_REPOSITORY https://github.com/Lyniat/Byte-Buffer
-        GIT_TAG        8ad265450682772ef4c387efb00fcb9d0cc22de4)
+        GIT_TAG        c9ffbbe9ffedae01f327049e81cb3254c684cca5)
 FetchContent_MakeAvailable(byte-buffer)
 
 target_link_libraries(ossp PUBLIC byte-buffer)
